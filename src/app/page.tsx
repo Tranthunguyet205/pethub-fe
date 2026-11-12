@@ -1,60 +1,22 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { useServices } from '@/hooks/useServiceQueries'
+import { useFormatters } from '@/hooks/useFormatters'
 
-interface ServiceItem {
-  id: string
-  name: string
-  description: string
-  price: number
-  durationMinutes: number
-  imageUrl: string
-}
-
-const featuredServices: ServiceItem[] = [
-  {
-    id: 'srv_bath',
-    name: 'Bath & Blow Dry (Tắm Sấy)',
-    description:
-      'Quy trình tắm 3 bước với dầu gội hữu cơ cao cấp, vắt tuyến hôi, sấy khô chải xù và dưỡng mượt lông.',
-    price: 150000,
-    durationMinutes: 60,
-    imageUrl:
-      'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'srv_full_grooming',
-    name: 'Full Grooming (Cắt Tỉa Toàn Diện)',
-    description:
-      'Gói chăm sóc cao cấp trọn vẹn: Tắm sấy, cắt tỉa lông tạo kiểu nghệ thuật theo giống loài, cắt dũa móng, vệ sinh tai và răng.',
-    price: 350000,
-    durationMinutes: 120,
-    imageUrl:
-      'https://images.unsplash.com/photo-1599140994530-a0fa80d96d39?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'srv_nail_trim',
-    name: 'Nail Trim & Grind (Cắt Mài Móng)',
-    description:
-      'Cắt tỉa móng cẩn thận tránh chạm tủy máu, mài tròn cạnh móng bằng máy êm giảm sắc nhọn.',
-    price: 50000,
-    durationMinutes: 20,
-    imageUrl:
-      'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&auto=format&fit=crop&q=80',
-  },
-]
-
-const formatVND = (amount: number) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-  }).format(amount)
-}
+const SYSTEM_CATEGORIES = ['CHECK_IN', 'CHECK_OUT']
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth()
+  const { data: serviceData } = useServices()
+  const services = useMemo(
+    () => (serviceData?.data ?? []).filter((s) => !SYSTEM_CATEGORIES.includes(s.category)),
+    [serviceData]
+  )
+  const featuredServices = useMemo(() => services.slice(0, 3), [services])
+  const { formatVND } = useFormatters()
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
@@ -291,11 +253,11 @@ export default function HomePage() {
                       <div>
                         <span className="text-[11px] text-slate-500 block">Giá dịch vụ</span>
                         <span className="text-lg font-extrabold font-display text-brand-700">
-                          {formatVND(service.price)}
+                          {formatVND(service.basePrice)}
                         </span>
                       </div>
                       <Link
-                        href="/bookings"
+                        href="/bookings/new"
                         className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm transition-all"
                       >
                         Đặt ngay
