@@ -5,25 +5,105 @@ import Link from 'next/link'
 import { useMyPets } from '@/hooks/usePetQueries'
 import { useServices } from '@/hooks/useServiceQueries'
 import { useCreateBooking, useBookingAvailability } from '@/hooks/useBookingQueries'
+import { useBoardingRoomPriceRange } from '@/hooks/useBoardingRoomQueries'
 import { useFormatters } from '@/hooks/useFormatters'
 import type { BookingType } from '@/types'
 
-const SYSTEM_CATEGORIES = ['CHECK_IN', 'CHECK_OUT']
+// Danh mục dịch vụ của hai loại đơn không giao nhau.
+// Hai bước hệ thống CHECK_IN / CHECK_OUT do backend tự chèn, khách không chọn.
+const GROOMING_CATEGORIES = ['BATH_AND_DRY', 'HAIRCUT', 'HYGIENE', 'FULL_GROOMING']
+const BOARDING_CATEGORIES = [
+  'ASSIGN_ROOM', 'FEEDING', 'WATER', 'WALKING', 'MEDICATION', 'CLEANING', 'DAILY_HEALTH_CHECK',
+]
+
+/**
+ * Ngày theo giờ máy người dùng. KHÔNG dùng toISOString() vì nó trả ngày theo UTC —
+ * trước 7h sáng giờ Việt Nam sẽ ra ngày hôm trước.
+ */
+const localDateString = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+const addDays = (dateStr: string, days: number) => {
+  const d = new Date(`${dateStr}T12:00:00`)
+  d.setDate(d.getDate() + days)
+  return localDateString(d)
+}
 
 export default function NewBookingPage() {
   const { data: pets, isLoading: petsLoading } = useMyPets()
-  const { data: serviceData, isLoading: servicesLoading } = useServices()
+  // limit=100 vì backend mặc định chỉ trả 10 mà hệ thống có 13 dịch vụ
+  const { data: serviceData, isLoading: servicesLoading } = useServices({ limit: 100 })
   const services = useMemo(() => serviceData?.data ?? [], [serviceData])
 
   const { mutateAsync: createBooking, isPending: isSubmitting } = useCreateBooking()
   const { formatVND } = useFormatters()
 
+  // Khoảng giá phòng theo đêm. Lúc đặt, khách chưa biết được xếp phòng nào
+  // (cửa hàng xếp khi xác nhận đơn) nên chỉ ước lượng được một khoảng.
+  const { data: roomPriceRange } = useBoardingRoomPriceRange()
+
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
-  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([])
   const [bookingType, setBookingType] = useState<BookingType>('GROOMING')
-  const [bookingDate, setBookingDate] = useState(new Date().toISOString().slice(0, 10))
+
+  /**
+   * Lưu lựa chọn dịch vụ TÁCH RIÊNG cho từng loại booking.
+   * Danh sách của GROOMING và BOARDING không giao nhau, nên nếu dùng chung một
+   * mảng thì khi đổi tab buộc phải xoá hết — người dùng mất công chọn lại.
+   */
+  const [selectionsByType, setSelectionsByType] = useState<Record<BookingType, number[]>>({
+    GROOMING: [],
+    BOARDING: [],
+  })
+  const selectedServiceIds = selectionsByType[bookingType]
+
+  // Khởi tạo sau khi mount: Next 16 (cacheComponents) chặn đọc new Date() lúc prerender
+  const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('09:00')
+
+  /** Ngày và giờ trả thú cưng — chỉ dùng cho đơn BOARDING, backend bắt buộc */
+  const [checkOutDate, setCheckOutDate] = useState('')
+
+  const [todayStr, setTodayStr] = useState('')
+  useEffect(() => {
+    const t = localDateString()
+    setTodayStr(t)
+    setBookingDate((prev) => prev || t)
+    setCheckOutDate((prev) => prev || addDays(t, 1))
+  }, [])
+  const [checkOutTime, setCheckOutTime] = useState('17:00')
+
+  /** Ghi chú của chủ nuôi, backend lưu vào Booking.notes */
+  const [bookingNotes, setBookingNotes] = useState('')
+
   const [errorMessage, setErrorMessage] = useState('')
+
+  const isBoarding = bookingType === 'BOARDING'
+
+  /** Số đêm lưu trú, chỉ để hiển thị cho người dùng dễ hình dung */
+  const nightCount = useMemo(() => {
+    if (!isBoarding) return 0
+    const diff = Math.round(
+      (new Date(`${checkOutDate}T00:00:00`).getTime() - new Date(`${bookingDate}T00:00:00`).getTime())
+      / 86400000,
+    )
+    return diff > 0 ? diff : 0
+  }, [isBoarding, bookingDate, checkOutDate])
+
+  /** Ngày trả phải sau ngày nhận — backend cũng chặn, đây chỉ để báo sớm */
+  const checkOutError = useMemo(() => {
+    if (!isBoarding) return ''
+    const checkIn = new Date(`${bookingDate}T${bookingTime}:00`)
+    const checkOut = new Date(`${checkOutDate}T${checkOutTime}:00`)
+    if (Number.isNaN(checkOut.getTime())) return 'Vui lòng chọn ngày trả thú cưng'
+    if (checkOut <= checkIn) return 'Thời gian trả phải sau thời gian nhận'
+    return ''
+  }, [isBoarding, bookingDate, bookingTime, checkOutDate, checkOutTime])
+
+  // Dịch ngày trả theo nếu người dùng đổi ngày nhận muộn hơn
+  useEffect(() => {
+    if (bookingDate && checkOutDate <= bookingDate) setCheckOutDate(addDays(bookingDate, 1))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingDate])
   const [bookingSuccess, setBookingSuccess] = useState(false)
   const [createdBookingId, setCreatedBookingId] = useState<number | null>(null)
 
@@ -36,17 +116,13 @@ export default function NewBookingPage() {
     }
   }, [pets, selectedPetId])
 
-  useEffect(() => {
-    setSelectedServiceIds([])
-  }, [bookingType])
-
   const filteredServices = useMemo(() => {
-    return services.filter((s) => !SYSTEM_CATEGORIES.includes(s.category))
-  }, [services])
+    const allowed = isBoarding ? BOARDING_CATEGORIES : GROOMING_CATEGORIES
+    return services.filter((s) => allowed.includes(s.category))
+  }, [services, isBoarding])
 
   const isSlotPast = (slot: string) => {
-    const today = new Date().toISOString().slice(0, 10)
-    if (bookingDate !== today) return false
+    if (!bookingDate || bookingDate !== todayStr) return false
     const now = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`
     return slot <= now
   }
@@ -71,9 +147,13 @@ export default function NewBookingPage() {
   }, [bookingDate, availability])
 
   const toggleServiceId = (id: number) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
+    setSelectionsByType((prev) => {
+      const list = prev[bookingType]
+      return {
+        ...prev,
+        [bookingType]: list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
+      }
+    })
   }
 
   const totalPrice = useMemo(() =>
@@ -83,17 +163,36 @@ export default function NewBookingPage() {
     [filteredServices, selectedServiceIds]
   )
 
-  const canSubmit = selectedPetId && selectedServiceIds.length > 0 && !isSubmitting
+  /** Tiền phòng dự tính: khoảng giá × số đêm */
+  const estimatedRoomCost = useMemo(() => {
+    if (!isBoarding || !roomPriceRange || !nightCount) return null
+    return { min: roomPriceRange.min * nightCount, max: roomPriceRange.max * nightCount }
+  }, [isBoarding, roomPriceRange, nightCount])
+
+  /** Tổng dự tính = tiền dịch vụ + khoảng tiền phòng */
+  const estimatedTotal = useMemo(() => {
+    if (!estimatedRoomCost) return null
+    return { min: totalPrice + estimatedRoomCost.min, max: totalPrice + estimatedRoomCost.max }
+  }, [estimatedRoomCost, totalPrice])
+
+  const canSubmit = !!selectedPetId && selectedServiceIds.length > 0 && !isSubmitting && !checkOutError
 
   const handleCreateBooking = async () => {
-    if (!selectedPetId || selectedServiceIds.length === 0) return
+    if (!canSubmit || !selectedPetId) return
     setErrorMessage('')
     try {
+      const notes = bookingNotes.trim()
       const result = await createBooking({
         petId: selectedPetId,
         bookingType,
-        expectedCheckInDate: `${bookingDate}T${bookingTime}:00`,
-        serviceIds: selectedServiceIds,
+        // Phải gửi ISO có múi giờ. Chuỗi naive sẽ bị backend (TZ=UTC) hiểu sai 7 tiếng.
+        expectedCheckInDate: new Date(`${bookingDate}T${bookingTime}:00`).toISOString(),
+        // Đơn lưu trú bắt buộc phải có ngày trả, thiếu là backend trả 400
+        ...(isBoarding
+          ? { expectedCheckOutDate: new Date(`${checkOutDate}T${checkOutTime}:00`).toISOString() }
+          : {}),
+        serviceIds: [...selectedServiceIds],
+        ...(notes ? { notes } : {}),
       })
       setBookingSuccess(true)
       setCreatedBookingId(result.id)
@@ -105,13 +204,16 @@ export default function NewBookingPage() {
   const resetForm = () => {
     setBookingSuccess(false)
     setCreatedBookingId(null)
-    setSelectedServiceIds([])
+    setSelectionsByType({ GROOMING: [], BOARDING: [] })
     setBookingTime('09:00')
+    setBookingNotes('')
+    setCheckOutDate(bookingDate ? addDays(bookingDate, 1) : '')
+    setCheckOutTime('17:00')
     setErrorMessage('')
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center gap-3">
         <Link
           href="/bookings"
@@ -256,14 +358,63 @@ export default function NewBookingPage() {
           {/* Step 4: Select Date & Time */}
           <div className="space-y-4">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-              4. Ngày và giờ hẹn:
+              4. {isBoarding ? 'Ngày nhận và ngày trả:' : 'Ngày và giờ hẹn:'}
             </label>
-            <input
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-              type="date"
-              className="px-4 py-2.5 rounded-xl border border-slate-200 font-medium text-sm focus:outline-brand-500 focus:ring-1 focus:ring-brand-500"
-            />
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <span className="text-[11px] text-slate-400 block mb-1">
+                  {isBoarding ? 'Ngày nhận bé' : 'Ngày hẹn'}
+                </span>
+                <input
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
+                  type="date"
+                  min={todayStr || undefined}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 font-medium text-sm focus:outline-brand-500 focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Đơn lưu trú bắt buộc có ngày + giờ trả */}
+              {isBoarding && (
+                <>
+                  <div>
+                    <span className="text-[11px] text-slate-400 block mb-1">Ngày trả bé</span>
+                    <input
+                      value={checkOutDate}
+                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      type="date"
+                      min={bookingDate ? addDays(bookingDate, 1) : undefined}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 font-medium text-sm focus:outline-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-400 block mb-1">Giờ trả bé</span>
+                    <input
+                      value={checkOutTime}
+                      onChange={(e) => setCheckOutTime(e.target.value)}
+                      type="time"
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 font-medium text-sm focus:outline-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {isBoarding && (
+              <div className="text-xs">
+                {checkOutError ? (
+                  <p className="text-rose-600 font-semibold">{checkOutError}</p>
+                ) : (
+                  <p className="text-slate-500">
+                    Thời gian lưu trú: <strong className="text-slate-800">{nightCount} đêm</strong>.
+                    {roomPriceRange && (
+                      <> Giá phòng {formatVND(roomPriceRange.min)} – {formatVND(roomPriceRange.max)}/đêm
+                      tuỳ loại phòng, cửa hàng xếp phòng khi xác nhận đơn.</>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
             <div>
               <p className="text-xs text-slate-500 mb-2">
                 Chọn khung giờ:
@@ -297,13 +448,65 @@ export default function NewBookingPage() {
             </div>
           </div>
 
+          {/* Step 5: Ghi chú cho nhân viên */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+              5. Ghi chú cho nhân viên{' '}
+              <span className="font-normal normal-case text-slate-400">(không bắt buộc)</span>:
+            </label>
+            <textarea
+              value={bookingNotes}
+              onChange={(e) => setBookingNotes(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Ví dụ: Bé sợ máy sấy công suất lớn, nhờ sấy nhẹ tay. Bé ăn 2 bữa/ngày..."
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm resize-none focus:outline-brand-500 focus:ring-1 focus:ring-brand-500"
+            />
+            <p className="text-[11px] text-slate-400">
+              Nhân viên sẽ thấy ghi chú này ngay trên màn hình chăm sóc. {bookingNotes.length}/1000
+            </p>
+          </div>
+
           {/* Summary and Submit */}
           <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <span className="text-xs text-slate-400 block">Tổng thanh toán dự tính:</span>
-              <span className="text-2xl font-extrabold font-display text-brand-700">
-                {formatVND(totalPrice)}
-              </span>
+              {/* GROOMING: một con số chắc chắn */}
+              {!isBoarding ? (
+                <>
+                  <span className="text-xs text-slate-400 block">Tổng thanh toán dự tính:</span>
+                  <span className="text-2xl font-extrabold font-display text-brand-700">
+                    {formatVND(totalPrice)}
+                  </span>
+                </>
+              ) : (
+                /* BOARDING: tách tiền dịch vụ và tiền phòng, tổng là một khoảng */
+                <>
+                  <div className="space-y-0.5 text-xs text-slate-500">
+                    <div className="flex gap-2">
+                      <span className="w-28">Tiền dịch vụ:</span>
+                      <strong className="text-slate-800">{formatVND(totalPrice)}</strong>
+                    </div>
+                    {estimatedRoomCost && (
+                      <div className="flex gap-2">
+                        <span className="w-28">Tiền phòng:</span>
+                        <strong className="text-slate-800">
+                          {formatVND(estimatedRoomCost.min)} – {formatVND(estimatedRoomCost.max)}
+                        </strong>
+                        <span className="text-slate-400">({nightCount} đêm)</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-400 block mt-1.5">Tổng thanh toán dự tính:</span>
+                  <span className="text-2xl font-extrabold font-display text-brand-700">
+                    {estimatedTotal
+                      ? `${formatVND(estimatedTotal.min)} – ${formatVND(estimatedTotal.max)}`
+                      : formatVND(totalPrice)}
+                  </span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">
+                    Số chính xác phụ thuộc phòng được xếp và được chốt khi bàn giao bé.
+                  </span>
+                </>
+              )}
             </div>
             <button
               onClick={handleCreateBooking}

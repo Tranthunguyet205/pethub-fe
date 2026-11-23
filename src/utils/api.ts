@@ -1,15 +1,63 @@
 import { cookieStorage } from './cookies'
 
-export const BASE_API_URL = 'https://legislatorial-federico-craggily.ngrok-free.dev/api'
+// export const BASE_API_URL = 'https://legislatorial-federico-craggily.ngrok-free.dev/api'
+export const BASE_API_URL =
+  process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000/api'
 
 interface FetchOptions extends Omit<RequestInit, 'body'> {
   body?: any
   query?: Record<string, any>
 }
 
+/**
+ * Dùng chung một promise refresh: nhiều request cùng dính 401 một lúc thì chỉ
+ * gọi /auth/refresh đúng một lần, các request còn lại chờ kết quả đó.
+ */
+let refreshPromise: Promise<string | null> | null = null
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = cookieStorage.getRefreshToken()
+  if (!refreshToken) return null
+
+  try {
+    const res = await fetch(`${BASE_API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: JSON.stringify({ refreshToken }),
+    })
+    if (!res.ok) return null
+
+    const json = await res.json()
+    // Backend trả thẳng { accessToken, refreshToken }; vẫn chấp nhận dạng bọc { data }
+    const payload = json?.data ?? json
+    if (!payload?.accessToken) return null
+
+    cookieStorage.setAccessToken(payload.accessToken)
+    if (payload.refreshToken) cookieStorage.setRefreshToken(payload.refreshToken)
+    return payload.accessToken as string
+  } catch {
+    return null
+  }
+}
+
+/** Hết cách cứu phiên đăng nhập → xóa cookie và đưa về trang đăng nhập */
+function forceLogout() {
+  cookieStorage.clearAuth()
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    // Cố ý reload toàn trang: pethubFetch nằm ngoài cây React nên không dùng được router,
+    // và reload giúp AuthContext + cache React Query đọc lại từ cookie đã bị xóa.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = '/login'
+  }
+}
+
 export async function pethubFetch<T = any>(
   endpoint: string,
-  options: FetchOptions = {}
+  options: FetchOptions = {},
+  isRetry = false
 ): Promise<T> {
   const { query, headers, body, method = 'GET', ...rest } = options
 
@@ -54,7 +102,26 @@ export async function pethubFetch<T = any>(
     ...rest,
   })
 
-  // 5. Handle Error Responses
+  // 5. Access token hết hạn → refresh một lần rồi gọi lại request gốc
+  const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refresh')
+  if (response.status === 401 && !isAuthEndpoint && !isRetry && typeof window !== 'undefined') {
+    if (!refreshPromise) {
+      refreshPromise = refreshAccessToken().finally(() => {
+        refreshPromise = null
+      })
+    }
+    const newToken = await refreshPromise
+
+    if (newToken) {
+      const retryHeaders = new Headers(headers)
+      retryHeaders.set('Authorization', `Bearer ${newToken}`)
+      return pethubFetch<T>(endpoint, { ...options, headers: retryHeaders }, true)
+    }
+
+    forceLogout()
+  }
+
+  // 6. Handle Error Responses
   if (!response.ok) {
     let errorData: any
     try {
@@ -68,7 +135,7 @@ export async function pethubFetch<T = any>(
     throw error
   }
 
-  // 6. Parse JSON or empty
+  // 7. Parse JSON or empty
   if (response.status === 204) {
     return null as any
   }

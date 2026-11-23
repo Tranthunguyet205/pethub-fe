@@ -55,6 +55,14 @@ export interface ChangePasswordDto {
   newPassword: string
 }
 
+/** GET /users/stats — số lượng người dùng theo vai trò (toàn hệ thống) */
+export interface UserStats {
+  total: number
+  owners: number
+  staffs: number
+  admins: number
+}
+
 export interface User {
   id: string | number
   fullName: string

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { authService } from '@/services/auth.service'
@@ -8,7 +8,14 @@ import { UserRoleMapping, type UserRole } from '@/types'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, personaLogin } = useAuth()
+  const { login, personaLogin, isAuthenticated, isLoading: isAuthLoading, role } = useAuth()
+
+  // Đã đăng nhập mà vẫn vào /login → đưa về trang chính theo vai trò (giống auth.global.ts bên Vue)
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated && role) {
+      router.replace(UserRoleMapping[role] || '/dashboard')
+    }
+  }, [isAuthLoading, isAuthenticated, role, router])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

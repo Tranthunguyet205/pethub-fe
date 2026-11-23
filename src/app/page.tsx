@@ -230,7 +230,7 @@ export default function HomePage() {
                 >
                   <div className="h-48 overflow-hidden relative">
                     <img
-                      src={service.imageUrl}
+                      src={service.imageUrl ?? undefined}
                       alt={service.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />

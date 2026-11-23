@@ -2,14 +2,12 @@
 
 import React, { useMemo } from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/context/AuthContext'
 import { useMyPets } from '@/hooks/usePetQueries'
 import { useBookings } from '@/hooks/useBookingQueries'
 import { useFormatters } from '@/hooks/useFormatters'
 import StatusBadge from '@/components/common/StatusBadge'
 
 export default function OwnerDashboardPage() {
-  const { user, logout } = useAuth()
   const { data: pets } = useMyPets()
   const { data: bookingData } = useBookings()
   const bookings = useMemo(() => bookingData?.data ?? [], [bookingData])
@@ -51,30 +49,7 @@ export default function OwnerDashboardPage() {
   }, [activeBooking])
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg">
-            🐾
-          </div>
-          <span className="font-bold text-slate-900 text-lg">
-            Pet<span className="text-emerald-600">Hub</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <Link href="/bookings" className="text-slate-600 hover:text-emerald-700">Lịch hẹn</Link>
-          <Link href="/pets" className="text-slate-600 hover:text-emerald-700">Thú cưng</Link>
-          <Link href="/services" className="text-slate-600 hover:text-emerald-700">Dịch vụ</Link>
-          <Link href="/profile" className="text-slate-600 hover:text-emerald-700">
-            {user?.fullName || 'Hồ sơ'}
-          </Link>
-          <button onClick={logout} className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer">
-            Đăng xuất
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-8">
+    <div className="max-w-7xl mx-auto w-full space-y-8">
         {/* Welcome banner */}
         <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-6 sm:p-8 text-white shadow-card relative overflow-hidden">
           <div className="relative z-10 max-w-2xl space-y-2">
@@ -246,7 +221,6 @@ export default function OwnerDashboardPage() {
             </div>
           )}
         </div>
-      </main>
     </div>
   )
 }
