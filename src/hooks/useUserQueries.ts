@@ -16,6 +16,8 @@ export const queryKeys = {
     all: ['users'] as const,
     list: (params?: UserQueryParams) => ['users', 'list', params] as const,
     detail: (id: string | number) => ['users', 'detail', String(id)] as const,
+    staff: ['users', 'staff'] as const,
+    stats: ['users', 'stats'] as const,
   },
 }
 
@@ -23,6 +25,27 @@ export function useUsers(params?: UserQueryParams) {
   return useQuery({
     queryKey: queryKeys.users.list(params),
     queryFn: () => userService.getAll(params),
+  })
+}
+
+/**
+ * Danh sách nhân viên để phân công booking.
+ * GET /users là ADMIN-only nên UI của Staff không dùng thay được.
+ * Ít đổi -> cache lâu.
+ */
+export function useStaffList() {
+  return useQuery({
+    queryKey: queryKeys.users.staff,
+    queryFn: () => userService.getStaffList(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+/** Số user theo vai trò trên toàn hệ thống — không phụ thuộc trang/bộ lọc đang xem */
+export function useUserStats() {
+  return useQuery({
+    queryKey: queryKeys.users.stats,
+    queryFn: () => userService.getStats(),
   })
 }
 

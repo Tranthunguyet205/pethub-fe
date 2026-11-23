@@ -10,12 +10,26 @@ export const boardingRoomKeys = {
   all: ['boarding-rooms'] as const,
   list: (params?: GetAllBoardingRoomParams) => ['boarding-rooms', 'list', params] as const,
   detail: (id: number) => ['boarding-rooms', 'detail', id] as const,
+  priceRange: ['boarding-rooms', 'price-range'] as const,
 }
 
 export function useBoardingRooms(params?: GetAllBoardingRoomParams) {
   return useQuery({
     queryKey: boardingRoomKeys.list(params),
     queryFn: () => boardingRoomService.getAll(params),
+  })
+}
+
+/**
+ * Khoảng giá phòng theo đêm, cho form đặt lịch của chủ nuôi.
+ * Chủ nuôi KHÔNG đọc được danh sách phòng (403) nên phải dùng endpoint này.
+ * Bảng giá ít đổi -> cache lâu.
+ */
+export function useBoardingRoomPriceRange() {
+  return useQuery({
+    queryKey: boardingRoomKeys.priceRange,
+    queryFn: () => boardingRoomService.getPriceRange(),
+    staleTime: 10 * 60 * 1000,
   })
 }
 

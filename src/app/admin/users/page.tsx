@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import type { CreateUserDto, User, UserQueryParams, UserRole } from '@/types'
-import { useUsers } from '@/hooks/useUserQueries'
+import { useUserStats, useUsers } from '@/hooks/useUserQueries'
 import { UserDetailModal } from '@/components/admin/UserDetailModal'
 import { UserEditModal } from '@/components/admin/UserEditModal'
 import { UserCreateModal } from '@/components/admin/UserCreateModal'
@@ -82,15 +82,14 @@ export default function AdminUsersPage() {
     return pages
   }, [totalPages, currentPage])
 
-  // Quick stats
-  const stats = useMemo(() => {
-    return {
-      total: totalItems,
-      owners: userList.filter((u) => u.role === 'OWNER').length,
-      staffs: userList.filter((u) => u.role === 'STAFF').length,
-      admins: userList.filter((u) => u.role === 'ADMIN').length,
-    }
-  }, [totalItems, userList])
+  // Quick stats — lấy từ GET /users/stats (toàn hệ thống), không đếm trên trang hiện tại
+  const { data: statsData } = useUserStats()
+  const stats = {
+    total: statsData?.total ?? 0,
+    owners: statsData?.owners ?? 0,
+    staffs: statsData?.staffs ?? 0,
+    admins: statsData?.admins ?? 0,
+  }
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false)

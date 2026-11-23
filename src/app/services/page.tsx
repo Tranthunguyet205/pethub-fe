@@ -66,7 +66,7 @@ export default function ServicesPage() {
           >
             <div>
               <div className="h-48 overflow-hidden relative">
-                <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                <img src={service.imageUrl ?? undefined} alt={service.name} className="w-full h-full object-cover" />
                 <div className="absolute top-3 right-3 bg-white/95 px-3 py-1 rounded-xl text-xs font-bold text-slate-800 shadow-sm">
                   ⏱ {service.durationMinutes} phút
                 </div>
@@ -79,22 +79,9 @@ export default function ServicesPage() {
                 <h3 className="font-bold text-lg text-slate-900">{service.name}</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">{service.description}</p>
 
-                {/* Add-ons */}
-                {service.addons && service.addons.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                      Dịch vụ cộng thêm (Add-ons):
-                    </span>
-                    <ul className="space-y-1.5 text-xs text-slate-600">
-                      {service.addons.map((addon: any) => (
-                        <li key={addon.id} className="flex items-center justify-between">
-                          <span>+ {addon.name}</span>
-                          <span className="font-semibold text-slate-800">{formatVND(addon.price)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* Add-ons: backend chưa có khái niệm dịch vụ cộng thêm
+                    (Service không có field `addons`), nên không hiển thị gì ở đây.
+                    Nếu cần, phải thêm model ở backend trước. */}
               </div>
             </div>
 

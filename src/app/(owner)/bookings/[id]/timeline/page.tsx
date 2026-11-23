@@ -1,13 +1,18 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useBookingDetail } from '@/hooks/useBookingQueries'
 import { useFormatters } from '@/hooks/useFormatters'
 import StatusBadge from '@/components/common/StatusBadge'
 
-export default function BookingTimelinePage() {
+/**
+ * useParams() là dynamic hook. Với cacheComponents của Next 16, phần đọc giá trị
+ * động phải nằm trong một Suspense boundary, nếu không build fail khi prerender
+ * (CLIENT_HOOK_DYNAMIC). Nên tách nội dung ra và bọc Suspense ở default export.
+ */
+function BookingTimelineContent() {
   const params = useParams()
   const bookingId = Number(params.id)
   const { data: booking, isLoading } = useBookingDetail(bookingId)
@@ -42,7 +47,7 @@ export default function BookingTimelinePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
@@ -177,5 +182,19 @@ export default function BookingTimelinePage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function BookingTimelinePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-5xl mx-auto bg-white rounded-3xl p-10 border border-slate-200 text-center text-sm text-slate-500">
+          Đang tải tiến trình chăm sóc...
+        </div>
+      }
+    >
+      <BookingTimelineContent />
+    </Suspense>
   )
 }

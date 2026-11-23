@@ -2,6 +2,7 @@ import { pethubFetch } from '@/utils/api'
 import type {
   BoardingRoom,
   GetAllBoardingRoomParams,
+  BoardingRoomPriceRange,
   CreateBoardingRoomDto,
   UpdateBoardingRoomDto,
   Pagination,
@@ -26,6 +27,11 @@ export const boardingRoomService = {
     return pethubFetch<{ data: BoardingRoom[]; meta: Pagination }>('/boarding-rooms', {
       query: params,
     })
+  },
+
+  /** Khoảng giá theo đêm — chủ nuôi gọi được, không trả danh sách phòng */
+  getPriceRange() {
+    return pethubFetch<BoardingRoomPriceRange>('/boarding-rooms/price-range')
   },
 
   getById(id: number) {

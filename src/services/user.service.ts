@@ -7,6 +7,7 @@ import type {
   UpdateUserDto,
   User,
   UserQueryParams,
+  UserStats,
 } from '@/types'
 
 const toFormData = (data: Record<string, any>): FormData => {
@@ -24,6 +25,15 @@ const toFormData = (data: Record<string, any>): FormData => {
 }
 
 export const userService = {
+  /**
+   * Danh sách nhân viên rút gọn cho ô phân công (ADMIN + STAFF).
+   * Backend trả MẢNG TRỰC TIẾP, không bọc trong { data } như các endpoint user khác.
+   */
+  getStaffList: () => pethubFetch<User[]>('/users/staff'),
+
+  // Thống kê số user theo vai trò trên toàn hệ thống (Admin Only)
+  getStats: () => pethubFetch<UserStats>('/users/stats'),
+
   // 1. Lấy danh sách người dùng kèm phân trang & bộ lọc (Admin Only)
   getAll: (params?: UserQueryParams) => {
     const query: Record<string, any> = {}

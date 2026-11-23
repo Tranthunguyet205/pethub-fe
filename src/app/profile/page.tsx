@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useChangePassword, useMe, useUpdateMe } from '@/hooks/useUserQueries'
 
@@ -144,8 +143,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
         {/* Toast */}
         {toastMessage && (
           <div
@@ -162,17 +160,6 @@ export default function ProfilePage() {
             </button>
           </div>
         )}
-
-        {/* Top navigation */}
-        <div className="flex items-center justify-between">
-          <Link
-            href={currentUser?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors"
-          >
-            <span>← Quay lại</span>
-          </Link>
-          <span className="text-xs text-slate-400 font-mono">PetHub User Account</span>
-        </div>
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -466,7 +453,6 @@ export default function ProfilePage() {
             </div>
           </form>
         )}
-      </div>
     </div>
   )
 }

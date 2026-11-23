@@ -75,7 +75,7 @@ export default function AdminBoardingRoomsPage() {
   // ── Create Modal ───────────────────────────────────
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createError, setCreateError] = useState('')
-  const [createForm, setCreateForm] = useState({ name: '', description: '', pricePerHour: 0, status: 'AVAILABLE' as RoomStatus })
+  const [createForm, setCreateForm] = useState({ name: '', description: '', pricePerNight: 0, status: 'AVAILABLE' as RoomStatus })
   const [createImageFile, setCreateImageFile] = useState<File | null>(null)
   const [createImagePreview, setCreateImagePreview] = useState<string | null>(null)
   const createImageRef = useRef<HTMLInputElement>(null)
@@ -88,7 +88,7 @@ export default function AdminBoardingRoomsPage() {
   }
 
   const resetCreateForm = () => {
-    setCreateForm({ name: '', description: '', pricePerHour: 0, status: 'AVAILABLE' })
+    setCreateForm({ name: '', description: '', pricePerNight: 0, status: 'AVAILABLE' })
     setCreateImageFile(null)
     setCreateImagePreview(null)
     setCreateError('')
@@ -105,7 +105,7 @@ export default function AdminBoardingRoomsPage() {
       setCreateError('Vui lòng điền đầy đủ Tên phòng và Mô tả.')
       return
     }
-    if (createForm.pricePerHour < 0) {
+    if (createForm.pricePerNight < 0) {
       setCreateError('Đơn giá không được âm.')
       return
     }
@@ -114,7 +114,7 @@ export default function AdminBoardingRoomsPage() {
       await createRoom({
         name: createForm.name.trim(),
         description: createForm.description.trim(),
-        pricePerHour: createForm.pricePerHour,
+        pricePerNight: createForm.pricePerNight,
         status: createForm.status,
         image: createImageFile || undefined,
       })
@@ -129,7 +129,7 @@ export default function AdminBoardingRoomsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editError, setEditError] = useState('')
   const [roomToEdit, setRoomToEdit] = useState<BoardingRoom | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', description: '', pricePerHour: 0, status: 'AVAILABLE' as RoomStatus })
+  const [editForm, setEditForm] = useState({ name: '', description: '', pricePerNight: 0, status: 'AVAILABLE' as RoomStatus })
   const [editImageFile, setEditImageFile] = useState<File | null>(null)
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null)
   const editImageRef = useRef<HTMLInputElement>(null)
@@ -143,7 +143,7 @@ export default function AdminBoardingRoomsPage() {
 
   const openEditModal = (r: BoardingRoom) => {
     setRoomToEdit(r)
-    setEditForm({ name: r.name, description: r.description, pricePerHour: r.pricePerHour, status: r.status })
+    setEditForm({ name: r.name, description: r.description, pricePerNight: r.pricePerNight, status: r.status })
     setEditImageFile(null)
     setEditImagePreview(null)
     setEditError('')
@@ -163,7 +163,7 @@ export default function AdminBoardingRoomsPage() {
     const changes: Record<string, any> = {}
     if (editForm.name.trim() !== original.name) changes.name = editForm.name.trim()
     if (editForm.description.trim() !== original.description) changes.description = editForm.description.trim()
-    if (editForm.pricePerHour !== original.pricePerHour) changes.pricePerHour = editForm.pricePerHour
+    if (editForm.pricePerNight !== original.pricePerNight) changes.pricePerNight = editForm.pricePerNight
     if (editForm.status !== original.status) changes.status = editForm.status
     if (editImageFile) changes.image = editImageFile
 
@@ -281,7 +281,7 @@ export default function AdminBoardingRoomsPage() {
                   <th className="py-3 px-4">Hình ảnh</th>
                   <th className="py-3 px-4">Tên phòng</th>
                   <th className="py-3 px-4">Mô tả</th>
-                  <th className="py-3 px-4">Đơn giá / giờ</th>
+                  <th className="py-3 px-4">Đơn giá / đêm</th>
                   <th className="py-3 px-4">Trạng thái</th>
                   <th className="py-3 px-4 text-right">Thao tác</th>
                 </tr>
@@ -305,7 +305,7 @@ export default function AdminBoardingRoomsPage() {
                       <div className="font-bold text-slate-800">{room.name}</div>
                     </td>
                     <td className="py-3.5 px-4 max-w-[300px] truncate text-slate-500">{room.description}</td>
-                    <td className="py-3.5 px-4 font-bold text-brand-700">{formatVND(room.pricePerHour)}</td>
+                    <td className="py-3.5 px-4 font-bold text-brand-700">{formatVND(room.pricePerNight)}</td>
                     <td className="py-3.5 px-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusConfig[room.status].bg} ${statusConfig[room.status].text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[room.status].dot}`} />
@@ -387,8 +387,8 @@ export default function AdminBoardingRoomsPage() {
               </div>
 
               <div className="bg-brand-50 rounded-xl p-4 border border-brand-200 text-center">
-                <span className="text-xs text-brand-500 font-semibold uppercase tracking-wider block">Đơn giá theo giờ</span>
-                <div className="text-2xl font-extrabold font-display text-brand-700 mt-1">{formatVND(selectedRoom.pricePerHour)}</div>
+                <span className="text-xs text-brand-500 font-semibold uppercase tracking-wider block">Đơn giá theo đêm</span>
+                <div className="text-2xl font-extrabold font-display text-brand-700 mt-1">{formatVND(selectedRoom.pricePerNight)}</div>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -458,10 +458,10 @@ export default function AdminBoardingRoomsPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Đơn giá / giờ (VNĐ) *</label>
+                  <label className="font-bold text-slate-700 block mb-1">Đơn giá / đêm (VNĐ) *</label>
                   <input
-                    value={createForm.pricePerHour}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, pricePerHour: Number(e.target.value) }))}
+                    value={createForm.pricePerNight}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, pricePerNight: Number(e.target.value) }))}
                     type="number"
                     min={0}
                     step={1000}
@@ -557,10 +557,10 @@ export default function AdminBoardingRoomsPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Đơn giá / giờ (VNĐ)</label>
+                  <label className="font-bold text-slate-700 block mb-1">Đơn giá / đêm (VNĐ)</label>
                   <input
-                    value={editForm.pricePerHour}
-                    onChange={(e) => setEditForm((f) => ({ ...f, pricePerHour: Number(e.target.value) }))}
+                    value={editForm.pricePerNight}
+                    onChange={(e) => setEditForm((f) => ({ ...f, pricePerNight: Number(e.target.value) }))}
                     type="number"
                     min={0}
                     step={1000}
@@ -613,10 +613,10 @@ export default function AdminBoardingRoomsPage() {
                     <span><span className="line-through text-slate-400">{roomToEdit.name}</span> → <span className="font-bold text-blue-700">{editForm.name}</span></span>
                   </div>
                 )}
-                {editForm.pricePerHour !== roomToEdit.pricePerHour && (
+                {editForm.pricePerNight !== roomToEdit.pricePerNight && (
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Giá / giờ:</span>
-                    <span><span className="line-through text-slate-400">{formatVND(roomToEdit.pricePerHour)}</span> → <span className="font-bold text-blue-700">{formatVND(editForm.pricePerHour)}</span></span>
+                    <span className="text-slate-400">Giá / đêm:</span>
+                    <span><span className="line-through text-slate-400">{formatVND(roomToEdit.pricePerNight)}</span> → <span className="font-bold text-blue-700">{formatVND(editForm.pricePerNight)}</span></span>
                   </div>
                 )}
                 {editForm.status !== roomToEdit.status && (
@@ -626,7 +626,7 @@ export default function AdminBoardingRoomsPage() {
                   </div>
                 )}
                 {editForm.name.trim() === roomToEdit.name &&
-                  editForm.pricePerHour === roomToEdit.pricePerHour &&
+                  editForm.pricePerNight === roomToEdit.pricePerNight &&
                   editForm.status === roomToEdit.status &&
                   editForm.description.trim() === roomToEdit.description &&
                   !editImageFile && (
