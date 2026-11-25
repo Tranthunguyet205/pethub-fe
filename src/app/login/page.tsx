@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { authService } from '@/services/auth.service'
+import { useAuthQueries } from '@/hooks/useAuthQueries'
 import { UserRoleMapping, type UserRole } from '@/types'
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, personaLogin, isAuthenticated, isLoading: isAuthLoading, role } = useAuth()
+  const { loginMutation } = useAuthQueries()
 
   // Đã đăng nhập mà vẫn vào /login → đưa về trang chính theo vai trò (giống auth.global.ts bên Vue)
   useEffect(() => {
@@ -19,8 +20,8 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const isLoading = loginMutation.isPending
 
   const handlePersonaClick = (role: UserRole) => {
     personaLogin(role)
@@ -28,7 +29,7 @@ export default function LoginPage() {
     router.push(targetRoute)
   }
 
-  const handleFormLogin = async (e: React.FormEvent) => {
+  const handleFormLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
 
@@ -37,28 +38,29 @@ export default function LoginPage() {
       return
     }
 
-    setIsLoading(true)
-    try {
-      const response = await authService.login({
-        email: email.trim(),
-        password: password.trim(),
-      })
+    loginMutation.mutate(
+      { email: email.trim(), password: password.trim() },
+      {
+        onSuccess: (response) => {
+          const userRole = response?.user?.role as UserRole
 
-      if (response?.data) {
-        login(response.data)
-      } else {
-        setErrorMessage('Đăng nhập thất bại: dữ liệu phản hồi không hợp lệ')
+          if (userRole && UserRoleMapping[userRole]) {
+            // login() tự lưu cookie + điều hướng theo vai trò
+            login(response)
+          } else {
+            setErrorMessage('Không tìm thấy quyền người dùng hoặc đường dẫn không hợp lệ')
+          }
+        },
+        onError: (error: any) => {
+          console.error('Lỗi đăng nhập:', error)
+          setErrorMessage(
+            error?.data?.message ||
+              error?.message ||
+              'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.'
+          )
+        },
       }
-    } catch (err: any) {
-      console.error('Lỗi đăng nhập:', err)
-      setErrorMessage(
-        err?.data?.message ||
-          err?.message ||
-          'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.'
-      )
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   return (
@@ -76,8 +78,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Quick Persona Login Cards for Demo */}
-        <div className="space-y-2.5 pt-1">
+        {/* Quick Persona Login Cards for Demo - đang tắt, giống bên Vue */}
+        <div className="space-y-2.5 pt-1 opacity-50 pointer-events-none select-none">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block text-center">
             ⚡ Đăng nhập nhanh 1 chạm (Demo Personas):
           </span>

@@ -28,6 +28,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className={`${plusJakartaSans.variable} ${outfit.variable} h-full antialiased`}>
+      <head>
+        {/* Font Awesome 6 qua CDN — giống cấu hình bên pethub-app/nuxt.config.ts */}
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>

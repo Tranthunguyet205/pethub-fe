@@ -6,15 +6,16 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 
 const menuItems = [
-  { label: 'Tổng quan', route: '/admin/dashboard', icon: '📈' },
-  { label: 'Lịch hẹn (Bookings)', route: '/admin/bookings', icon: '📅' },
-  { label: 'Dịch vụ & Bảng giá', route: '/admin/services', icon: '✂️' },
-  { label: 'Toàn bộ người dùng', route: '/admin/users', icon: '👥' },
-  { label: 'Nhân viên (Staff)', route: '/admin/staff', icon: '👨‍⚕️' },
-  { label: 'Phòng / Chuồng (Rooms)', route: '/admin/rooms', icon: '🏠' },
-  { label: 'Hóa đơn & Doanh thu', route: '/admin/invoices', icon: '💰' },
-  { label: 'Đánh giá (Reviews)', route: '/admin/reviews', icon: '⭐' },
-  { label: 'Báo cáo', route: '/admin/reports', icon: '📊' },
+  { label: 'Tổng quan', route: '/admin/dashboard', icon: 'fa-solid fa-chart-line' },
+  { label: 'Lịch hẹn (Bookings)', route: '/admin/bookings', icon: 'fa-solid fa-calendar-check' },
+  { label: 'Dịch vụ & Bảng giá', route: '/admin/services', icon: 'fa-solid fa-scissors' },
+  { label: 'Thú cưng (Pets)', route: '/admin/pets', icon: 'fa-solid fa-paw' },
+  { label: 'Toàn bộ người dùng', route: '/admin/users', icon: 'fa-solid fa-users' },
+  { label: 'Nhân viên (Staff)', route: '/admin/staff', icon: 'fa-solid fa-user-nurse' },
+  { label: 'Phòng lưu trú (Rooms)', route: '/admin/boarding-rooms', icon: 'fa-solid fa-house' },
+  { label: 'Hóa đơn & Doanh thu', route: '/admin/invoices', icon: 'fa-solid fa-money-bill-wave' },
+  { label: 'Đánh giá (Reviews)', route: '/admin/reviews', icon: 'fa-solid fa-star' },
+  { label: 'Báo cáo', route: '/admin/reports', icon: 'fa-solid fa-chart-pie' },
 ]
 
 /**
@@ -39,7 +40,7 @@ function AdminNav() {
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <span className="text-base">{item.icon}</span>
+              <i className={`${item.icon} w-4 text-center`} />
               <span>{item.label}</span>
             </div>
           </Link>
@@ -60,8 +61,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div>
             {/* Logo */}
             <Link href="/admin/dashboard" className="flex items-center space-x-2.5 mb-6">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center text-white text-lg">
-                👑
+              <div className="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center text-white text-sm">
+                <i className="fa-solid fa-crown" />
               </div>
               <div>
                 <span className="font-display font-bold text-white text-lg">
@@ -111,7 +112,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               onClick={logout}
               className="w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 text-[11px] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>🚪</span>
+              <i className="fa-solid fa-right-from-bracket" />
               <span>Đăng xuất</span>
             </button>
           </div>
@@ -129,7 +130,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 href="/admin/users"
                 className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1"
               >
-                <span>👥</span>
+                <i className="fa-solid fa-users" />
                 <span>Quản lý người dùng</span>
               </Link>
             </div>

@@ -11,13 +11,13 @@ import { useBookings } from '@/hooks/useBookingQueries'
  * Route group (owner) không làm thay đổi URL: /dashboard, /pets, /bookings... giữ nguyên.
  */
 const menuItems = [
-  { label: 'Tổng quan (Dashboard)', route: '/dashboard', icon: '📊' },
-  { label: 'Thú cưng của tôi', route: '/pets', icon: '🐾' },
-  { label: 'Đặt lịch chăm sóc', route: '/bookings/new', icon: '📅' },
-  { label: 'Lịch hẹn & Tiến trình', route: '/bookings', icon: '📋' },
-  { label: 'Lịch sử & Hóa đơn', route: '/history', icon: '🧾' },
-  { label: 'Thông báo', route: '/notifications', icon: '🔔' },
-  { label: 'Hồ sơ cá nhân', route: '/profile', icon: '👤' },
+  { label: 'Tổng quan (Dashboard)', route: '/dashboard', icon: 'fa-solid fa-chart-pie' },
+  { label: 'Thú cưng của tôi', route: '/pets', icon: 'fa-solid fa-paw' },
+  { label: 'Đặt lịch chăm sóc', route: '/bookings/new', icon: 'fa-solid fa-calendar-plus' },
+  { label: 'Lịch hẹn & Tiến trình', route: '/bookings', icon: 'fa-solid fa-clipboard-list' },
+  { label: 'Lịch sử & Hóa đơn', route: '/history', icon: 'fa-solid fa-file-invoice' },
+  { label: 'Thông báo', route: '/notifications', icon: 'fa-solid fa-bell' },
+  { label: 'Hồ sơ cá nhân', route: '/profile', icon: 'fa-solid fa-user' },
 ]
 
 /**
@@ -45,7 +45,7 @@ function OwnerNav() {
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <span className="w-4 text-center">{item.icon}</span>
+              <i className={`${item.icon} w-4 text-center`} />
               <span>{item.label}</span>
             </div>
           </Link>
@@ -85,7 +85,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
           <div>
             <Link href="/dashboard" className="flex items-center space-x-2.5 mb-6">
               <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white text-sm">
-                🐾
+                <i className="fa-solid fa-paw" />
               </div>
               <div>
                 <span className="font-display font-bold text-slate-900 text-lg">
@@ -132,7 +132,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
                 className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
                 title="Cài đặt & Hồ sơ"
               >
-                ⚙️
+                <i className="fa-solid fa-gear" />
               </Link>
               <button
                 type="button"
@@ -140,7 +140,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
                 className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                 title="Đăng xuất"
               >
-                🚪
+                <i className="fa-solid fa-right-from-bracket" />
               </button>
             </div>
           </div>

@@ -1,15 +1,16 @@
 import { pethubFetch } from '@/utils/api'
-import type { ApiResponse, LoginRequest, LoginResponse } from '@/types'
+import type { LoginRequest, LoginResponse } from '@/types'
 
 export const authService = {
+  // Backend trả thẳng { user, accessToken, refreshToken }, không bọc { success, data }
   login: (data: LoginRequest) =>
-    pethubFetch<ApiResponse<LoginResponse>>('/auth/login', {
+    pethubFetch<LoginResponse>('/auth/login', {
       method: 'POST',
       body: data,
     }),
 
   refreshToken: (refreshToken: string) =>
-    pethubFetch<ApiResponse<{ accessToken: string; refreshToken: string }>>('/auth/refresh', {
+    pethubFetch<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
       method: 'POST',
       body: { refreshToken },
     }),
