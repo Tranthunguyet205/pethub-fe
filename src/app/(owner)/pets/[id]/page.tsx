@@ -235,7 +235,7 @@ export default function PetDetailPage() {
 
               <div className="pt-4 border-t border-slate-100 flex justify-end">
                 <Link
-                  href="/bookings/new"
+                  href={`/bookings/new?petId=${pet.id}`}
                   className="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs shadow-soft hover:bg-brand-700 transition-all flex items-center gap-1.5"
                 >
                   📅 Đặt lịch cho {pet.name}

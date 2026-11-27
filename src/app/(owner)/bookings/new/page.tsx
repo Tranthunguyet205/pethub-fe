@@ -8,6 +8,7 @@ import { useCreateBooking, useBookingAvailability } from '@/hooks/useBookingQuer
 import { useBoardingRoomPriceRange } from '@/hooks/useBoardingRoomQueries'
 import { useFormatters } from '@/hooks/useFormatters'
 import type { BookingType } from '@/types'
+import { useSearchParams } from 'next/navigation'
 
 // Danh mục dịch vụ của hai loại đơn không giao nhau.
 // Hai bước hệ thống CHECK_IN / CHECK_OUT do backend tự chèn, khách không chọn.
@@ -37,7 +38,7 @@ export default function NewBookingPage() {
 
   const { mutateAsync: createBooking, isPending: isSubmitting } = useCreateBooking()
   const { formatVND } = useFormatters()
-
+  const searchParams = useSearchParams();
   // Khoảng giá phòng theo đêm. Lúc đặt, khách chưa biết được xếp phòng nào
   // (cửa hàng xếp khi xác nhận đơn) nên chỉ ước lượng được một khoảng.
   const { data: roomPriceRange } = useBoardingRoomPriceRange()
@@ -102,7 +103,7 @@ export default function NewBookingPage() {
   // Dịch ngày trả theo nếu người dùng đổi ngày nhận muộn hơn
   useEffect(() => {
     if (bookingDate && checkOutDate <= bookingDate) setCheckOutDate(addDays(bookingDate, 1))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingDate])
   const [bookingSuccess, setBookingSuccess] = useState(false)
   const [createdBookingId, setCreatedBookingId] = useState<number | null>(null)
@@ -111,10 +112,16 @@ export default function NewBookingPage() {
   const { data: availability, isLoading: availabilityLoading } = useBookingAvailability(availabilityParams)
 
   useEffect(() => {
-    if (pets?.length && !selectedPetId) {
-      setSelectedPetId(pets[0].id)
+    if (!pets?.length) return
+    if (selectedPetId) return
+
+    const urlId = Number(searchParams?.get('petId'))
+    if (urlId && pets.some((p) => p.id === urlId)) {
+      setSelectedPetId(urlId)
+      return
     }
-  }, [pets, selectedPetId])
+    setSelectedPetId(pets[0].id)
+  }, [pets, selectedPetId, searchParams])
 
   const filteredServices = useMemo(() => {
     const allowed = isBoarding ? BOARDING_CATEGORIES : GROOMING_CATEGORIES
@@ -138,13 +145,16 @@ export default function NewBookingPage() {
     return false
   }
 
+  // Phụ thuộc `availability`, KHÔNG phụ thuộc `bookingDate`: lúc ngày vừa đổi thì query chưa
+  // refetch xong nên `availability` vẫn là slot của ngày cũ — validate ở đó sẽ chọn sai khung giờ.
   useEffect(() => {
-    if (isSlotDisabled(bookingTime) && availability?.slots) {
-      const firstAvailable = availability.slots.find((s) => !isSlotDisabled(s.time))
-      setBookingTime(firstAvailable?.time ?? '09:00')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingDate, availability])
+    if (!availability?.slots) return
+    if (!isSlotDisabled(bookingTime)) return
+
+    const firstAvailable = availability.slots.find((s) => !isSlotDisabled(s.time))
+    setBookingTime(firstAvailable?.time ?? '09:00')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availability])
 
   const toggleServiceId = (id: number) => {
     setSelectionsByType((prev) => {
@@ -288,11 +298,10 @@ export default function NewBookingPage() {
                   <div
                     key={pet.id}
                     onClick={() => setSelectedPetId(pet.id)}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
-                      selectedPetId === pet.id
-                        ? 'border-brand-600 bg-brand-50/50 shadow-soft ring-2 ring-brand-100'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 ${selectedPetId === pet.id
+                      ? 'border-brand-600 bg-brand-50/50 shadow-soft ring-2 ring-brand-100'
+                      : 'border-slate-200 hover:border-slate-300'
+                      }`}
                   >
                     <img src={pet.avatarUrl ?? ''} alt={pet.name} className="w-12 h-12 rounded-xl object-cover" />
                     <div>
@@ -315,11 +324,10 @@ export default function NewBookingPage() {
                 <button
                   key={type}
                   onClick={() => setBookingType(type)}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all border-2 cursor-pointer ${
-                    bookingType === type
-                      ? 'border-brand-600 bg-brand-50 text-brand-700'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                  }`}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all border-2 cursor-pointer ${bookingType === type
+                    ? 'border-brand-600 bg-brand-50 text-brand-700'
+                    : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
                 >
                   {type === 'GROOMING' ? 'Grooming' : 'Boarding (Lưu trú)'}
                 </button>
@@ -337,11 +345,10 @@ export default function NewBookingPage() {
                 <div
                   key={service.id}
                   onClick={() => toggleServiceId(service.id)}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex justify-between items-start ${
-                    selectedServiceIds.includes(service.id)
-                      ? 'border-brand-600 bg-brand-50/50 shadow-soft ring-2 ring-brand-100'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex justify-between items-start ${selectedServiceIds.includes(service.id)
+                    ? 'border-brand-600 bg-brand-50/50 shadow-soft ring-2 ring-brand-100'
+                    : 'border-slate-200 hover:border-slate-300'
+                    }`}
                 >
                   <div>
                     <p className="font-bold text-sm text-slate-900">{service.name}</p>
@@ -409,7 +416,7 @@ export default function NewBookingPage() {
                     Thời gian lưu trú: <strong className="text-slate-800">{nightCount} đêm</strong>.
                     {roomPriceRange && (
                       <> Giá phòng {formatVND(roomPriceRange.min)} – {formatVND(roomPriceRange.max)}/đêm
-                      tuỳ loại phòng, cửa hàng xếp phòng khi xác nhận đơn.</>
+                        tuỳ loại phòng, cửa hàng xếp phòng khi xác nhận đơn.</>
                     )}
                   </p>
                 )}
@@ -426,13 +433,12 @@ export default function NewBookingPage() {
                     key={slot.time}
                     onClick={() => !isSlotDisabled(slot.time) && setBookingTime(slot.time)}
                     disabled={isSlotDisabled(slot.time)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer disabled:cursor-not-allowed ${
-                      isSlotDisabled(slot.time)
-                        ? 'border-slate-100 bg-slate-50 text-slate-300 line-through'
-                        : bookingTime === slot.time
-                          ? 'border-brand-600 bg-brand-50 text-brand-700 ring-2 ring-brand-100'
-                          : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer disabled:cursor-not-allowed ${isSlotDisabled(slot.time)
+                      ? 'border-slate-100 bg-slate-50 text-slate-300 line-through'
+                      : bookingTime === slot.time
+                        ? 'border-brand-600 bg-brand-50 text-brand-700 ring-2 ring-brand-100'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
                   >
                     <span>{slot.time}</span>
                     {isSlotPast(slot.time) ? (
@@ -511,9 +517,8 @@ export default function NewBookingPage() {
             <button
               onClick={handleCreateBooking}
               disabled={!canSubmit}
-              className={`px-8 py-3 rounded-2xl font-bold text-sm text-white shadow-soft transition-all cursor-pointer disabled:cursor-not-allowed ${
-                !canSubmit ? 'bg-slate-300' : 'bg-brand-600 hover:bg-brand-700 hover:shadow-card'
-              }`}
+              className={`px-8 py-3 rounded-2xl font-bold text-sm text-white shadow-soft transition-all cursor-pointer disabled:cursor-not-allowed ${!canSubmit ? 'bg-slate-300' : 'bg-brand-600 hover:bg-brand-700 hover:shadow-card'
+                }`}
             >
               {isSubmitting ? 'Đang tạo lịch...' : 'Xác nhận Đặt lịch'}
             </button>

@@ -165,7 +165,7 @@ export default function MyPetsPage() {
                   </button>
                 </div>
                 <Link
-                  href="/bookings/new"
+                  href={`/bookings/new?petId=${pet.id}`}
                   className="px-3.5 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-xs transition-all"
                 >
                   Đặt lịch →

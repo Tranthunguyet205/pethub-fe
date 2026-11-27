@@ -9,7 +9,9 @@ import StatusBadge from '@/components/common/StatusBadge'
 
 export default function OwnerDashboardPage() {
   const { data: pets } = useMyPets()
-  const { data: bookingData } = useBookings()
+  // limit=100 vì backend mặc định chỉ trả 10: các KPI bên dưới (đã hoàn thành, tổng chi tiêu)
+  // tính trên toàn bộ danh sách, lấy thiếu là ra số sai mà không có dấu hiệu gì.
+  const { data: bookingData } = useBookings({ limit: 100 })
   const bookings = useMemo(() => bookingData?.data ?? [], [bookingData])
   const { formatVND } = useFormatters()
 
@@ -28,10 +30,18 @@ export default function OwnerDashboardPage() {
     [bookings]
   )
 
+  // Tiền phòng chỉ nằm trong costBreakdown — tự cộng bookingServices sẽ thiếu với đơn BOARDING.
   const totalSpent = useMemo(() =>
     bookings
       .filter((b) => b.status === 'COMPLETED')
-      .reduce((sum, b) => sum + b.bookingServices.reduce((s, svc) => s + svc.price, 0), 0),
+      .reduce(
+        (sum, b) =>
+          sum +
+          (b.costBreakdown?.totalAmount ??
+            b.totalAmount ??
+            b.bookingServices.reduce((s, svc) => s + svc.price, 0)),
+        0
+      ),
     [bookings]
   )
 
@@ -51,7 +61,7 @@ export default function OwnerDashboardPage() {
   return (
     <div className="max-w-7xl mx-auto w-full space-y-8">
         {/* Welcome banner */}
-        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-6 sm:p-8 text-white shadow-card relative overflow-hidden">
+        <div className="bg-gradient-to-r from-brand-600 via-teal-600 to-emerald-700 rounded-3xl p-6 sm:p-8 text-white shadow-card relative overflow-hidden">
           <div className="relative z-10 max-w-2xl space-y-2">
             <span className="px-2.5 py-1 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider">
               Chào mừng bạn quay trở lại
@@ -59,14 +69,14 @@ export default function OwnerDashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold font-display">
               Bảng điều khiển chăm sóc thú cưng
             </h1>
-            <p className="text-sm text-emerald-100 leading-relaxed">
+            <p className="text-sm text-brand-100 leading-relaxed">
               Theo dõi sức khỏe, tiến trình và lịch sử dịch vụ của các bé cưng nhà bạn tại PetHub.
             </p>
             <div className="flex flex-wrap gap-3 pt-4">
-              <Link href="/bookings/new" className="px-5 py-2.5 rounded-xl bg-white text-emerald-700 font-bold text-xs shadow-sm hover:bg-emerald-50 transition-all">
+              <Link href="/bookings/new" className="px-5 py-2.5 rounded-xl bg-white text-brand-700 font-bold text-xs shadow-sm hover:bg-brand-50 transition-all">
                 + Đặt lịch hẹn mới
               </Link>
-              <Link href="/pets" className="px-5 py-2.5 rounded-xl bg-emerald-700/60 hover:bg-emerald-700 text-white font-semibold text-xs border border-white/20 transition-all">
+              <Link href="/pets/new" className="px-5 py-2.5 rounded-xl bg-brand-700/60 hover:bg-brand-700 text-white font-semibold text-xs border border-white/20 transition-all">
                 Thêm hồ sơ thú cưng
               </Link>
             </div>
@@ -134,12 +144,12 @@ export default function OwnerDashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-slate-900 font-display">Hồ sơ thú cưng của bạn</h2>
-            <Link href="/pets" className="text-xs font-bold text-emerald-700 hover:text-emerald-800">Xem tất cả →</Link>
+            <Link href="/pets" className="text-xs font-bold text-brand-700 hover:text-brand-800">Xem tất cả →</Link>
           </div>
           {(!pets || pets.length === 0) ? (
             <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-soft text-center">
               <p className="text-sm text-slate-500 mb-3">Bạn chưa có hồ sơ thú cưng nào.</p>
-              <Link href="/pets" className="text-sm font-bold text-emerald-600 hover:underline">+ Tạo hồ sơ thú cưng đầu tiên</Link>
+              <Link href="/pets/new" className="text-sm font-bold text-brand-600 hover:underline">+ Tạo hồ sơ thú cưng đầu tiên</Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -169,8 +179,8 @@ export default function OwnerDashboardPage() {
                     )}
                   </div>
                   <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                    <Link href={`/pets/${pet.id}`} className="text-xs font-bold text-slate-600 hover:text-emerald-600">Chi tiết hồ sơ</Link>
-                    <Link href="/bookings/new" className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-all">
+                    <Link href={`/pets/${pet.id}`} className="text-xs font-bold text-slate-600 hover:text-brand-600">Chi tiết hồ sơ</Link>
+                    <Link href={`/bookings/new?petId=${pet.id}`} className="px-3 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs border border-brand-200 transition-all">
                       Đặt lịch cho {pet.name}
                     </Link>
                   </div>
@@ -184,7 +194,7 @@ export default function OwnerDashboardPage() {
         <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-soft">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-slate-900 font-display">Lịch hẹn dịch vụ gần đây</h2>
-            <Link href="/bookings" className="text-xs font-bold text-emerald-700 hover:text-emerald-800">Xem toàn bộ danh sách →</Link>
+            <Link href="/bookings" className="text-xs font-bold text-brand-700 hover:text-brand-800">Xem toàn bộ danh sách →</Link>
           </div>
           {recentBookings.length === 0 ? (
             <div className="py-8 text-center text-sm text-slate-400">Chưa có lịch hẹn nào.</div>
@@ -210,7 +220,7 @@ export default function OwnerDashboardPage() {
                       <td className="py-3.5 px-4">{formatDate(b.expectedCheckInDate)}</td>
                       <td className="py-3.5 px-4"><StatusBadge status={b.status} /></td>
                       <td className="py-3.5 px-4 text-right">
-                        <Link href={`/bookings/${b.id}/timeline`} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                        <Link href={`/bookings/${b.id}/timeline`} className="text-xs font-bold text-brand-600 hover:text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200">
                           Chi tiết
                         </Link>
                       </td>

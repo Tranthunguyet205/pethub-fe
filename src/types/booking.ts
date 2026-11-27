@@ -189,4 +189,9 @@ export interface AvailabilityResponse {
 export interface QueryAvailabilityParams {
   date: string
   bookingType?: BookingType
+  /**
+   * Bỏ qua đơn này khi đếm chỗ. Cần khi đang đổi lịch cho chính đơn đó —
+   * nếu không nó tự chiếm chỗ của mình và khung giờ hiện tại báo hết chỗ.
+   */
+  excludeBookingId?: number
 }

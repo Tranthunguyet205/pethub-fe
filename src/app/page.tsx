@@ -120,7 +120,7 @@ export default function HomePage() {
 
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Link
-                    href="/bookings"
+                    href="/bookings/new"
                     className="px-6 py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-card hover:shadow-glow transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
                   >
                     <span>🐾 Đặt lịch chăm sóc ngay</span>

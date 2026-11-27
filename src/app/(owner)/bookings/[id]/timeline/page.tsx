@@ -22,7 +22,11 @@ function BookingTimelineContent() {
 
   const displayServices = booking?.bookingServices ?? []
 
-  const totalPrice = displayServices.reduce((sum, s) => sum + s.price, 0)
+  // Tiền phòng chỉ nằm trong costBreakdown — tự cộng bookingServices sẽ thiếu với đơn BOARDING.
+  const roomAmount = booking?.costBreakdown?.roomAmount ?? 0
+  const totalPrice =
+    booking?.costBreakdown?.totalAmount ?? displayServices.reduce((sum, s) => sum + s.price, 0)
+
   const completedCount = displayServices.filter((s) => s.status === 'COMPLETED').length
 
   const formatDateTime = (dateStr: string | null) => {
@@ -175,9 +179,22 @@ function BookingTimelineContent() {
           </div>
 
           {/* Total */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-soft flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-600">Tổng chi phí</span>
-            <span className="text-xl font-extrabold font-display text-brand-700">{formatVND(totalPrice)}</span>
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-soft space-y-2">
+            {roomAmount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600">
+                  Tiền phòng lưu trú
+                  {!!booking.costBreakdown?.stayNights && ` (${booking.costBreakdown.stayNights} đêm)`}
+                </span>
+                <span className="font-semibold text-slate-800">{formatVND(roomAmount)}</span>
+              </div>
+            )}
+            <div
+              className={`flex items-center justify-between ${roomAmount > 0 ? 'pt-2 border-t border-slate-100' : ''}`}
+            >
+              <span className="text-sm font-bold text-slate-600">Tổng chi phí</span>
+              <span className="text-xl font-extrabold font-display text-brand-700">{formatVND(totalPrice)}</span>
+            </div>
           </div>
         </>
       )}

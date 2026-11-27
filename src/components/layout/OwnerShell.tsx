@@ -13,10 +13,12 @@ import { useBookings } from '@/hooks/useBookingQueries'
 const menuItems = [
   { label: 'Tổng quan (Dashboard)', route: '/dashboard', icon: 'fa-solid fa-chart-pie' },
   { label: 'Thú cưng của tôi', route: '/pets', icon: 'fa-solid fa-paw' },
+  { label: 'Bảng giá dịch vụ', route: '/services', icon: 'fa-solid fa-tags' },
   { label: 'Đặt lịch chăm sóc', route: '/bookings/new', icon: 'fa-solid fa-calendar-plus' },
   { label: 'Lịch hẹn & Tiến trình', route: '/bookings', icon: 'fa-solid fa-clipboard-list' },
   { label: 'Lịch sử & Hóa đơn', route: '/history', icon: 'fa-solid fa-file-invoice' },
-  { label: 'Thông báo', route: '/notifications', icon: 'fa-solid fa-bell' },
+  // Thông báo (/notifications) tạm ẩn: backend chưa có model lẫn module nên trang trống.
+  // Route và file vẫn còn, thêm lại mục này khi module xong.
   { label: 'Hồ sơ cá nhân', route: '/profile', icon: 'fa-solid fa-user' },
 ]
 
